@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flash_chat/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+final _firestore = FirebaseFirestore.instance;
+User loggedInUser;
 
 class ChatScreen extends StatefulWidget {
   static const id = 'chat_screen';
@@ -11,7 +15,9 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _auth = FirebaseAuth.instance;
-  User loggedInUser;
+
+  String messageText;
+  final TextEditingController messageTextfieldController = TextEditingController();
 
   @override
   void initState() {
@@ -24,7 +30,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final user = _auth.currentUser;
     if (user != null) {
       loggedInUser = user;
-      print(loggedInUser.email);
     }
   }
 
@@ -37,7 +42,8 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
               icon: Icon(Icons.close),
               onPressed: () {
-                //Implement logout functionality
+                _auth.signOut();
+                Navigator.pop(context);
               }),
         ],
         title: Text('⚡️Chat'),
@@ -47,7 +53,8 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
+          children: [
+            MessagesStream(),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
@@ -56,14 +63,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       onChanged: (value) {
-                        //Do something with the user input.
+                        messageText = value;
                       },
                       decoration: kMessageTextFieldDecoration,
+                      controller: messageTextfieldController,
                     ),
                   ),
                   FlatButton(
                     onPressed: () {
-                      //Implement send functionality.
+                      _firestore.collection('messages').add({
+                        'text': messageText,
+                        'sender': loggedInUser.email,
+                        'createdAt': DateTime.now(),
+                      });
+                      messageTextfieldController.clear();
                     },
                     child: Text(
                       'Send',
@@ -75,6 +88,88 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class MessagesStream extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: StreamBuilder<QuerySnapshot>(
+        stream: _firestore.collection('messages').orderBy('createdAt', descending: true).snapshots(),
+        builder: (context, streamBuilderSnapshot) {
+          if (!streamBuilderSnapshot.hasData) {
+            return Center(
+              child: CircularProgressIndicator(
+                backgroundColor: Colors.lightBlueAccent,
+              ),
+            );
+          }
+
+          final querySnapshot = streamBuilderSnapshot.data;
+
+          return ListView(
+            reverse: true,
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+            children: querySnapshot.docs.map((doc) {
+              final String text = doc.data()['text'];
+              final String sender = doc.data()['sender'];
+              return MessageBubble(text: text, sender: sender, isMe: sender == loggedInUser?.email);
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  MessageBubble({this.text, this.sender, this.isMe});
+
+  final String text;
+  final String sender;
+  final bool isMe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 5.0),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Text(
+            sender,
+            style: TextStyle(
+              fontSize: 12.0,
+              color: Colors.black54,
+            ),
+          ),
+          SizedBox(
+            height: 4,
+          ),
+          Material(
+            elevation: 5.0,
+            color: isMe ? Colors.lightBlueAccent : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: isMe ? Radius.circular(30) : Radius.zero,
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+              topRight: !isMe ? Radius.circular(30) : Radius.zero,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 15.0,
+                  color: isMe ? Colors.white : Colors.black54,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
