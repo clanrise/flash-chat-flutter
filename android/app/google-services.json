@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "234004568109",
+    "project_id": "flash-chat-802e5",
+    "storage_bucket": "flash-chat-802e5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:234004568109:android:cf648fa3cfbf78945400a4",
+        "android_client_info": {
+          "package_name": "com.clanrise.flash_chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "234004568109-g0ps13aao13nujafhl7ej45vbcvevcio.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3MFuEIZwUXv7QatCvkpNoyJt9Qgf2Z4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "234004568109-g0ps13aao13nujafhl7ej45vbcvevcio.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
